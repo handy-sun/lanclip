@@ -37,6 +37,7 @@ There is also a legacy PHP/Swoole backend in `server/`. README marks the Swoole 
 - `server/`: archived PHP/Swoole implementation and PHAR support.
 - `.github/workflows/ci.yml`: builds Windows and Ubuntu caxa executables and frontend static artifacts on pushes to `master`.
 - `Dockerfile`: builds frontend in one Node 22 Alpine stage, copies static files into `server-node/static`, then runs `node main.js`.
+- `flake.nix`: Nix package and development shell. The default package builds the Node backend with frontend static assets embedded.
 - `build-phar.php`: legacy PHAR packager for the PHP/Swoole backend.
 
 ## Common Commands
@@ -94,6 +95,16 @@ Docker:
 docker image build -t lanclip .
 docker container run -d -p 9501:9501 lanclip
 ```
+
+Nix:
+
+```bash
+nix develop
+nix build
+nix run
+```
+
+The default flake package builds the Vue frontend first, embeds the resulting static files into the Node backend package, and exposes `bin/lanclip`.
 
 Legacy PHP/Swoole backend, only when explicitly needed:
 
