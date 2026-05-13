@@ -36,11 +36,11 @@ jobs:
             ext=""
           fi
           cd client
-          npm install
-          NODE_OPTIONS=--openssl-legacy-provider npm run build
+          npm ci
+          npm run build
           cd ../server-node
-          npm install
-          npm install --save-dev caxa
+          npm ci
+          npm install --no-save caxa
           npx caxa \
             --input . \
             --output "../dist/cloud-clipboard${ext}" \

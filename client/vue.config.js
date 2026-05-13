@@ -5,12 +5,6 @@ module.exports = {
     transpileDependencies: [
         'vuetify',
     ],
-    pluginOptions: {
-        webpackBundleAnalyzer: {
-            analyzerMode: 'disabled',
-            openAnalyzer: false,
-        },
-    },
     devServer: {
         port: 1210,
         proxy: {

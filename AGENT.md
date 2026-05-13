@@ -8,7 +8,7 @@ Lanclip is a self-hosted web clipboard for sharing text and files across devices
 
 The maintained runtime path is:
 
-- Frontend: Vue 2.7 + Vue CLI 4 + Vuetify 2 in `client/`
+- Frontend: Vue 2.7 + Vue CLI 5 + Vuetify 2 in `client/`
 - Backend: Node.js ESM + Koa + koa-websocket in `server-node/`
 - Static assets: built from `client/` and copied into `server-node/static/`
 
@@ -41,13 +41,13 @@ There is also a legacy PHP/Swoole backend in `server/`. README marks the Swoole 
 
 ## Common Commands
 
-There are no lock files in this repository, so use `npm install` instead of `npm ci` unless a lock file is added later.
+The Node projects use npm lock files. Use `npm ci` for reproducible installs when a lock file is present; use `npm install` only when intentionally updating dependency versions.
 
 Frontend:
 
 ```bash
 cd client
-npm install
+npm ci
 npm run serve
 ```
 
@@ -55,17 +55,17 @@ Frontend build:
 
 ```bash
 cd client
-npm install
+npm ci
 npm run build
 ```
 
-The build uses `NODE_OPTIONS=--openssl-legacy-provider` and Vue CLI `--modern`, then runs `after-build.js`.
+The build uses Vue CLI `--modern`, then runs `after-build.js`.
 
 Node backend:
 
 ```bash
 cd server-node
-npm install
+npm ci
 npm run dev
 ```
 
@@ -73,7 +73,7 @@ Production-style local backend:
 
 ```bash
 cd server-node
-npm install
+npm ci
 npm start
 ```
 
@@ -81,10 +81,10 @@ Full source run from a clean checkout:
 
 ```bash
 cd client
-npm install
+npm ci
 npm run build
 cd ../server-node
-npm install
+npm ci
 node main.js
 ```
 
@@ -129,7 +129,7 @@ Important config fields:
 - `text.limit`: max text length.
 - `file.expire`, `file.chunk`, `file.limit`: upload expiry, chunk size, and total file limit.
 
-Generated runtime files such as `config.json`, `history.json`, storage directories, `node_modules`, static build output, and PHAR archives should not be mixed into unrelated changes.
+Generated runtime files such as `config.json`, `history.json`, storage directories, `node_modules`, static build output, and PHAR archives should not be mixed into unrelated changes. Keep `package-lock.json` files committed so installs are reproducible.
 
 ## API And Data Flow
 
@@ -189,7 +189,7 @@ Practical verification for backend/API changes:
 
 ```bash
 cd server-node
-npm install
+npm ci
 npm start
 ```
 
@@ -204,7 +204,7 @@ Practical verification for frontend changes:
 
 ```bash
 cd client
-npm install
+npm ci
 npm run build
 ```
 
@@ -212,8 +212,8 @@ For interactive UI changes, run backend on `9501` and frontend dev server on `12
 
 ## Known Risks And Gotchas
 
-- There are no package lock files, so dependency resolution can drift between installs.
-- Vue CLI 4 and webpack 4 require the OpenSSL legacy provider on modern Node; keep `NODE_OPTIONS=--openssl-legacy-provider` in build/serve paths.
+- npm lock files are committed for the Node projects; update them deliberately with `npm install` when changing dependencies.
+- The frontend build chain is on Vue CLI 5 / webpack 5, so it should not require `NODE_OPTIONS=--openssl-legacy-provider` on modern Node.
 - `server-node/app/config.js` writes `config.json` automatically in the current working directory. Avoid accidentally committing generated local config.
 - Text messages are HTML-escaped before storage and unescaped in `/content/:id`; received cards render escaped HTML with `v-html` plus linkification.
 - File deletion is split between message revocation and physical file deletion. UI code often does both; backend endpoints do not automatically remove file storage when a file message is revoked.

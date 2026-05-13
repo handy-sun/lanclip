@@ -5,7 +5,7 @@ import vuetify from './plugins/vuetify';
 import websocket from './websocket';
 import axios from 'axios';
 import VueAxios from 'vue-axios';
-import linkify from 'vue-linkify';
+import linkifyHtml from 'linkify-html';
 
 import {
     prettyFileSize,
@@ -18,7 +18,9 @@ import 'typeface-roboto/index.css';
 Vue.config.productionTip = false;
 
 Vue.use(VueAxios, axios);
-Vue.directive('linkified', linkify);
+Vue.directive('linkified', (el, binding) => {
+    el.innerHTML = linkifyHtml(el.innerHTML, binding.value);
+});
 Vue.filter('prettyFileSize', prettyFileSize);
 Vue.filter('percentage', percentage);
 Vue.filter('formatTimestamp', formatTimestamp);

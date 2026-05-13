@@ -114,6 +114,5 @@ dist
 .yarn/build-state.yml
 .pnp.*
 
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
