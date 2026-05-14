@@ -1,17 +1,18 @@
-# Delete History Race Condition
+# saveHistory() Race Condition
 
 ## Symptom
 
-Deleting a message causes the UI to show it removed, but after refreshing the page the deleted message reappears and a different message may be missing instead.
+Deleting a message causes the UI to show it removed, but after refreshing the page the deleted message reappears and a different message may be missing instead. The same class of bug can also cause newly sent messages to vanish after a server restart.
 
 ## Root Cause
 
-`saveHistory()` in `server-node/app/http-router.js` is an async function (`fs.promises.writeFile`) that is **never awaited** at any call site. When multiple operations (delete, new message, another delete) happen in quick succession, concurrent `writeFile` calls interleave and the last-to-finish write overwrites with potentially stale data.
+`saveHistory()` in `server-node/app/http-router.js` is a function returning an unawaited Promise (`fs.promises.writeFile`) at every call site. When multiple operations (delete, new message, another delete) happen in quick succession, concurrent `writeFile` calls interleave and the last-to-finish write overwrites with potentially stale data.
 
 ### Call Sites (all unawaited)
 
 - `DELETE /revoke/:id` — single message delete
 - `DELETE /revoke/all` — clear all messages
+- `DELETE /file/:uuid` — delete uploaded file
 - `POST /text` — send text
 - `POST /upload` — upload file
 - `POST /upload/finish/:uuid` — chunked upload finish
@@ -42,8 +43,8 @@ const saveHistory = () => {
 ```
 
 - Each call chains onto the previous promise, guaranteeing order
-- `.catch(() => {})` prevents a failed write from blocking subsequent writes
-- Returns the promise so callers can optionally `await` it (e.g., before process exit)
+- `.catch(() => {})` prevents a failed write from blocking subsequent writes, but silently swallows errors (disk-full, permission denied, etc.) — consider logging in the catch handler if observability is needed
+- Returns the promise so callers can optionally `await` it; however, all call sites remain fire-and-forget — the serialization itself is the fix, awaiting is not required
 
 ## Related Code Paths
 
