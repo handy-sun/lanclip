@@ -19,16 +19,20 @@ import {
 
 const historyPath = config.server.historyFile || path.join(process.cwd(), 'history.json');
 
-const saveHistory = () => fs.promises.writeFile(historyPath, JSON.stringify({
-    file: Array.from(uploadFileMap.values()).filter(e => e.expireTime > Date.now() / 1e3).map(e => ({
-        name: e.name,
-        uuid: e.uuid,
-        size: e.size,
-        uploadTime: e.uploadTime,
-        expireTime: e.expireTime,
-    })),
-    receive: messageQueue.queue.filter(e => e.event === 'receive').filter(e => e.data.type !== 'file' || e.data.expire > Date.now() / 1e3).map(e => e.data),
-}));
+let saveHistoryPromise = Promise.resolve();
+const saveHistory = () => {
+    saveHistoryPromise = saveHistoryPromise.catch(() => {}).then(() => fs.promises.writeFile(historyPath, JSON.stringify({
+        file: Array.from(uploadFileMap.values()).filter(e => e.expireTime > Date.now() / 1e3).map(e => ({
+            name: e.name,
+            uuid: e.uuid,
+            size: e.size,
+            uploadTime: e.uploadTime,
+            expireTime: e.expireTime,
+        })),
+        receive: messageQueue.queue.filter(e => e.event === 'receive').filter(e => e.data.type !== 'file' || e.data.expire > Date.now() / 1e3).map(e => e.data),
+    })));
+    return saveHistoryPromise;
+};
 
 /** @type {import('koa').Middleware} */
 const authMiddleware = async (ctx, next) => {
