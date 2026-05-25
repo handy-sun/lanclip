@@ -1,2 +1,13 @@
 .git
 node_modules
+dist
+static
+config.json
+history.json
+.storage
+cloud-clipboard.phar
+cloud-clipboard-gz.phar
+cloud-clipboard-bz2.phar
+result
+result-*
+server-node/static

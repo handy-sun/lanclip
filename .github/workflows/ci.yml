@@ -26,11 +26,11 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: 22
           architecture: x64
           check-latest: true
           cache: npm
-          cache-dependency-path: "**/package.json"
+          cache-dependency-path: "**/package-lock.json"
       - name: Build executable
         run: |
           if [ $RUNNER_OS == "Windows" ]; then
