@@ -80,7 +80,7 @@
 
           server = pkgs.buildNpmPackage {
             pname = "lanclip";
-            version = "1.2.0";
+            version = "0.1.0";
 
             src = cleanNodeSource ./server-node;
             inherit nodejs;
