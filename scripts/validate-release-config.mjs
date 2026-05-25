@@ -10,24 +10,49 @@ const dockerignore = read('.dockerignore');
 
 assert.match(
     releaseWorkflow,
-    /name:\s+Verify release tag matches server version[\s\S]*process\.env\.GITHUB_REF_NAME/,
+    /name:\s+Verify release tag matches server version[\s\S]*process\.env\.RELEASE_VERSION/,
     'release workflow must verify tag version against server-node/package.json',
+);
+assert.match(
+    releaseWorkflow,
+    /workflow_dispatch:[\s\S]*tag:[\s\S]*Release tag to publish/,
+    'release workflow must support manual dispatch for backfilling an existing release tag',
+);
+assert.match(
+    releaseWorkflow,
+    /ref:\s+\$\{\{ steps\.release\.outputs\.tag \}\}/,
+    'release workflow must checkout the resolved release tag',
 );
 
 assert.match(
     releaseWorkflow,
-    /type=semver,pattern=\{\{major\}\}\.\{\{minor\}\},enable=\$\{\{ !contains\(github\.ref_name, '-'\) \}\}/,
+    /type=semver,pattern=\{\{version\}\},value=\$\{\{ steps\.release\.outputs\.tag \}\}/,
+    'exact Docker semver tag must be generated from the resolved release tag',
+);
+assert.match(
+    releaseWorkflow,
+    /type=semver,pattern=\{\{major\}\}\.\{\{minor\}\},value=\$\{\{ steps\.release\.outputs\.tag \}\},enable=\$\{\{ steps\.release\.outputs\.stable == 'true' \}\}/,
     'minor Docker tag must only be pushed for stable release tags',
 );
 assert.match(
     releaseWorkflow,
-    /type=semver,pattern=\{\{major\}\},enable=\$\{\{ !contains\(github\.ref_name, '-'\) \}\}/,
+    /type=semver,pattern=\{\{major\}\},value=\$\{\{ steps\.release\.outputs\.tag \}\},enable=\$\{\{ steps\.release\.outputs\.stable == 'true' \}\}/,
     'major Docker tag must only be pushed for stable release tags',
 );
 assert.match(
     releaseWorkflow,
-    /type=raw,value=latest,enable=\$\{\{ !contains\(github\.ref_name, '-'\) \}\}/,
+    /type=raw,value=latest,enable=\$\{\{ steps\.release\.outputs\.stable == 'true' \}\}/,
     'latest Docker tag must only be pushed for stable release tags',
+);
+assert.match(
+    releaseWorkflow,
+    /uses:\s+docker\/setup-qemu-action@v3[\s\S]*uses:\s+docker\/setup-buildx-action@v3/,
+    'release workflow must set up QEMU before Buildx for cross-platform builds',
+);
+assert.match(
+    releaseWorkflow,
+    /platforms:\s+linux\/amd64,linux\/arm64/,
+    'release workflow must publish linux/amd64 and linux/arm64 Docker images',
 );
 
 assert.doesNotMatch(
