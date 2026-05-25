@@ -21,7 +21,7 @@ const historyPath = config.server.historyFile || path.join(process.cwd(), 'histo
 
 let saveHistoryPromise = Promise.resolve();
 const saveHistory = () => {
-    saveHistoryPromise = saveHistoryPromise.catch(() => {}).then(() => fs.promises.writeFile(historyPath, JSON.stringify({
+    saveHistoryPromise = saveHistoryPromise.then(() => fs.promises.writeFile(historyPath, JSON.stringify({
         file: Array.from(uploadFileMap.values()).filter(e => e.expireTime > Date.now() / 1e3).map(e => ({
             name: e.name,
             uuid: e.uuid,
@@ -30,7 +30,9 @@ const saveHistory = () => {
             expireTime: e.expireTime,
         })),
         receive: messageQueue.queue.filter(e => e.event === 'receive').filter(e => e.data.type !== 'file' || e.data.expire > Date.now() / 1e3).map(e => e.data),
-    })));
+    }))).catch(error => {
+        console.error(new Date().toISOString(), '-', `Failed to save history to ${historyPath}:`, error);
+    });
     return saveHistoryPromise;
 };
 
@@ -105,10 +107,12 @@ router.post(
 
 router.delete('/revoke/:id(\\d+)', authMiddleware, async ctx => {
     const id = parseInt(ctx.params.id);
-    if (!messageQueue.queue.some(e => e.data.id === id)) {
+    const room = ctx.query.room || '';
+    const index = messageQueue.queue.findIndex(e => e.data.id === id && e.data.room === room);
+    if (index === -1) {
         return writeJSON(ctx, 400, {}, '不存在的消息 ID');
     }
-    messageQueue.queue.splice(messageQueue.queue.findIndex(e => e.data.id === id), 1);
+    messageQueue.queue.splice(index, 1);
     /** @type {koaWebsocket.App<Koa.DefaultState, Koa.DefaultContext>} */
     const app = ctx.app;
     wsBoardcast(
@@ -117,10 +121,10 @@ router.delete('/revoke/:id(\\d+)', authMiddleware, async ctx => {
             event: 'revoke',
             data: {
                 id,
-                room: ctx.query.room || '',
+                room,
             },
         }),
-        ctx.query.room || '',
+        room,
     );
     writeJSON(ctx);
     saveHistory();
