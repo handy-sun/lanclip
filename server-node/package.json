@@ -1,7 +1,6 @@
 {
-  "name": "cloud-clipboard-server-node",
+  "name": "lanclip",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
@@ -20,5 +19,29 @@
     "koa-websocket": "^7.0.0",
     "sharp": "^0.34.3",
     "ua-parser-js": "2.0.4"
-  }
+  },
+  "description": "Self-hosted LAN clipboard for sharing text and files across devices",
+  "main": "main.js",
+  "license": "MIT",
+  "homepage": "https://github.com/handy-sun/lanclip",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/handy-sun/lanclip.git",
+    "directory": "server-node"
+  },
+  "bugs": {
+    "url": "https://github.com/handy-sun/lanclip/issues"
+  },
+  "bin": {
+    "lanclip": "main.js"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "files": [
+    "app/",
+    "main.js",
+    "static/"
+  ]
 }

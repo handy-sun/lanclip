@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from 'node:fs';
 import http from 'node:http';
 import http2 from 'node:http2';
