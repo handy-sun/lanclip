@@ -83,8 +83,8 @@ if (Array.isArray(config.server.host) && config.server.host.length) {
 
 console.log([
     '',
-    `Cloud Clipboard ${process.env.VERSION}`,
-    'https://github.com/TransparentLC/cloud-clipboard',
+    `LanClip ${process.env.VERSION}`,
+    'https://github.com/handy-sun/lanclip',
     '',
     'Authorization code' + (config.server.auth ? `: ${config.server.auth}` : ' is disabled.'),
     ...(config.server.uds ? [`Server listening on UNIX domain socket ${config.server.uds} ...`] : []),
