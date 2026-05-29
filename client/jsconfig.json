@@ -9,7 +9,7 @@
     },
     "include": [
         "./src/**/*.vue",
-        "./src/**/*.js",
+        "./src/**/*.js"
     ],
     "exclude": [
         "node_modules"
