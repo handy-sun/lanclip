@@ -1,4 +1,4 @@
-# cloud-clipboard
+# LanClip
 
 因为不想为了手机和电脑互传文件这种小事就扫🐴登录某个辣鸡 APP，而自己折腾出来的一个在线剪贴板。
 
@@ -50,14 +50,14 @@
 
 ~~据说 [pkg](https://github.com/vercel/pkg) 可以把 Node.js 应用打包成可执行文件，但是目前的 5.x 版还不支持 ES Modules，所以先🕊️了（~~
 
-使用 [caxa](https://github.com/leafac/caxa) 和 GitHub Actions 打包成了可以在 Windows amd64 和 Linux amd64 使用的可执行文件，可以在[这里](https://nightly.link/TransparentLC/cloud-clipboard/workflows/ci/master)下载。
+使用 [caxa](https://github.com/leafac/caxa) 和 GitHub Actions 打包成了可以在 Windows amd64 和 Linux amd64 使用的可执行文件，可以在[这里](https://nightly.link/handy-sun/lanclip/workflows/ci/master)下载。
 
 *caxa 的打包原理相当于将 Node.js 的可执行文件和所有代码一起做成了一个自解压压缩包，执行时会解压到临时文件夹，并且在退出时不会自动清空。*
 
 配置文件是按照以下顺序尝试读取的：
 
 * 和可执行文件放在同一目录的 `config.json`
-* 在命令行中指定：`cloud-clipboard /path/to/config.json`
+* 在命令行中指定：`lanclip /path/to/config.json`
 
 #### 使用 Docker 运行
 
@@ -76,7 +76,7 @@ docker container run -d -p 9501:9501 myclip
 > 如果你在使用时遇到了问题，请先确认这是本项目本身（而不是某个 Docker 镜像）的问题。
 
 > [!WARNING]
-> [csmayi/lan-clip](https://hub.docker.com/r/csmayi/lan-clip) 打包的版本无法使用反向代理，在我[修复](https://github.com/TransparentLC/cloud-clipboard/commit/39ba010f0ac721337842be4668fce693f4587a95)之后并没有同步更新，目前不建议使用。
+> [csmayi/lan-clip](https://hub.docker.com/r/csmayi/lan-clip) 打包的版本无法使用反向代理，在我[修复](https://github.com/handy-sun/lanclip/commit/39ba010f0ac721337842be4668fce693f4587a95)之后并没有同步更新，目前不建议使用。
 
 ```sh
 docker pull ***:latest
@@ -173,7 +173,7 @@ https://github.com/xfangfang/cloud-clipboard/tree/c/server-c
 
 ~~实际上也不能叫安装，毕竟下载之后就可以直接用了~~
 
-1. 前往 [Release](https://github.com/TransparentLC/cloud-clipboard/releases) 下载最新的 `cloud-clipboard.phar`。
+1. 前往 [Release](https://github.com/handy-sun/lanclip/releases) 下载最新的 `cloud-clipboard.phar`。
 2. 在同一目录新建配置文件 `config.json`（可以参见下面的说明），**一定要根据实际修改 IP 地址！**
 3. `php cloud-clipboard.phar`
 4. 打开 `http://192.168.1.136:9501`（需要替换为在配置文件中**实际设定的地址和端口**）即可使用～
@@ -212,14 +212,14 @@ php build-phar.php
             "::1"
         ],
         "port": 9501, // 端口号，falsy 值表示不监听
-        "uds": "/var/run/cloud-clipboard.sock", // UNIX domain socket 路径，可以后接“:666”设定权限（默认666），falsy 值表示不监听
+        "uds": "/var/run/lanclip.sock", // UNIX domain socket 路径，可以后接“:666”设定权限（默认666），falsy 值表示不监听
         "prefix": "", // 部署时的URL前缀，例如想要在 http://localhost/prefix/ 访问，则将这一项设为 /prefix
         "key": "localhost-key.pem", // HTTPS 私钥路径
         "cert": "localhost.pem", // HTTPS 证书路径
         "history": 10, // 消息历史记录的数量
         "auth": false, // 是否在连接时要求使用密码认证，falsy 值表示不使用
         "historyFile": null, // 自定义历史记录存储路径，默认为当前目录的 history.json
-        "storageDir": null // 自定义文件存储目录，默认为临时文件夹的.cloud-clipboard-storage目录
+        "storageDir": null // 自定义文件存储目录，默认为临时文件夹的.lanclip-storage目录
     },
     "text": {
         "limit": 4096 // 文本的长度限制
@@ -284,7 +284,7 @@ Not Found
 
 $ curl http://localhost:9501/content/3?room=reisen-8fce
 {
-  "name": "cloud-clipboard-server-node",
+  "name": "lanclip-server",
   ...
 }
 ```

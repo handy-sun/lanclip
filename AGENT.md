@@ -136,7 +136,7 @@ Important config fields:
 - `server.auth`: `false` disables auth, `true` generates a random six-character code, string uses a fixed code.
 - `server.history`: max in-memory message history.
 - `server.historyFile`: optional persistent history JSON path, default `history.json` in cwd.
-- `server.storageDir`: optional uploaded file storage dir, default OS temp `.cloud-clipboard-storage`.
+- `server.storageDir`: optional uploaded file storage dir, default OS temp `.lanclip-storage`.
 - `text.limit`: max text length.
 - `file.expire`, `file.chunk`, `file.limit`: upload expiry, chunk size, and total file limit.
 
