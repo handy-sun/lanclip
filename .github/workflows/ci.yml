@@ -31,6 +31,17 @@ jobs:
           check-latest: true
           cache: npm
           cache-dependency-path: "**/package-lock.json"
+      - name: Build frontend
+        run: |
+          cd client
+          npm ci
+          npm run build
+      - name: Upload frontend static files
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: static
+          path: server-node/static
       - name: Build executable
         run: |
           if [ $RUNNER_OS == "Windows" ]; then
@@ -38,15 +49,12 @@ jobs:
           else
             ext=""
           fi
-          cd client
-          npm ci
-          npm run build
-          cd ../server-node
+          cd server-node
           npm ci
           npm install --no-save caxa
           npx caxa \
             --input . \
-            --output "../dist/cloud-clipboard${ext}" \
+            --output "../dist/lanclip${ext}" \
             --exclude \
               ".*" \
               "config.json" \
@@ -54,13 +62,11 @@ jobs:
             -- \
               "{{caxa}}/node_modules/.bin/node" \
               "{{caxa}}/main.js"
-      - name: Upload result (server)
+      - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
-          name: cloud-clipboard-${{ runner.os }}
+          name: lanclip-${{ runner.os }}
           path: dist
-      - name: Upload result (frontend static files)
-        uses: actions/upload-artifact@v4
-        with:
-          name: static-${{ runner.os }}
-          path: server-node/static
+      - name: Validate release config
+        if: runner.os == 'Linux'
+        run: node scripts/validate-release-config.mjs
