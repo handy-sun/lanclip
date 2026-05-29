@@ -49,7 +49,7 @@
             src = cleanNodeSource ./client;
             inherit nodejs;
 
-            npmDepsHash = "sha256-Y0aD5mwLvZi2OmDj6tdd/891fpKKbmtliwulKeT7nHE=";
+            npmDepsHash = "sha256-JtBGAOr9imxJ7vsyWLjv94C5s6Ncm4wKtpuuLbBpeAs=";
 
             nativeBuildInputs = [
               pkgs.brotli
@@ -85,7 +85,7 @@
             src = cleanNodeSource ./server-node;
             inherit nodejs;
 
-            npmDepsHash = "sha256-lvWjA8FrONPout8HmmxBfxIS3OmZXOcUmLd0URIfNnI=";
+            npmDepsHash = "sha256-XNmXFmnv3ok0ECRf9EKX6XFw1Dub29yaBUeh6pLqGEE=";
             dontNpmBuild = true;
 
             nativeBuildInputs = [
@@ -93,7 +93,7 @@
             ];
 
             postInstall = ''
-              appDir="$out/lib/node_modules/cloud-clipboard-server-node"
+              appDir="$out/lib/node_modules/lanclip-server"
 
               rm -rf "$appDir/static"
               mkdir -p "$appDir/static"
