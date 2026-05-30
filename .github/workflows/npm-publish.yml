@@ -78,4 +78,6 @@ jobs:
 
       - name: Publish package
         working-directory: server-node
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish
