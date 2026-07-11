@@ -18,6 +18,7 @@ import wsRouter from './app/ws-router.js';
 process.env.VERSION = `node-${JSON.parse(fs.readFileSync(path.join(path.dirname(url.fileURLToPath(import.meta.url)), 'package.json'))).version}`;
 
 const app = koaWebsocket(new Koa);
+app.proxy = true;
 app.use(async (ctx, next) => {
     const startTime = performance.now();
 
