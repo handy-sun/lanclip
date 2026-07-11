@@ -236,11 +236,13 @@ php build-phar.php
 > 如果同时设定了私钥和证书路径，则会使用 HTTPS 协议访问前端界面，未设定则会使用 HTTP 协议。
 > 自用的话，可以使用 [mkcert](https://mkcert.dev/) 自行生成证书，并将根证书添加到系统/浏览器的信任列表中。
 > 如果使用了 Nginx 等软件的反向代理，且这些软件已经提供了 HTTPS 连接，则无需在这里设定。
+> 反向代理需要保留原始 `Host`、设置 `X-Forwarded-Proto`，并正确转发 WebSocket Upgrade。服务端会信任这些代理请求头，因此应当只监听回环地址、私有容器网络，或通过防火墙确保只有可信的反向代理/frpc 可以直接访问服务端。
 >
 > “密码认证”的说明：
 >
 > 如果启用“密码认证”，只有输入正确的密码才能连接到服务端并查看剪贴板内容。
 > 可以将 `server.auth` 字段设为 `true`（随机生成六位密码）或字符串（自定义密码）来启用这个功能，启动服务端后终端会以 `Authorization code: ******` 的格式输出当前使用的密码。
+> 网页默认使用 HttpOnly 的浏览器会话 Cookie 保存认证状态，关闭浏览器后失效。勾选“记住密码”后可以选择固定保留 1 天、3 天、7 天或 30 天，访问和重连不会延长有效期。部分启用“恢复上次会话”的浏览器可能恢复会话 Cookie，这是浏览器自身的行为。
 
 ### HTTP API
 
@@ -290,6 +292,8 @@ $ curl http://localhost:9501/content/3?room=reisen-8fce
 ```
 
 #### 密码认证
+
+网页使用 HttpOnly Cookie 认证；通过脚本调用 HTTP API 时仍然使用 `Authorization: Bearer <密码>`：
 
 ```console
 $ curl -H "Content-Type: text/plain" --data-binary "foobar" http://localhost:9501/text

@@ -28,6 +28,7 @@ There is also a legacy PHP/Swoole backend in `server/`. README marks the Swoole 
   - `after-build.js`: gzip/brotli-compresses built assets and copies `dist` to both `server/static` and `server-node/static`.
 - `server-node/`: current backend.
   - `main.js`: Koa app setup, static hosting, HTTP/WS routers, HTTP/HTTPS/UDS listeners, startup logging.
+  - `app/auth.js`: shared cookie/Bearer/query authentication, fixed cookie lifetimes, login throttling.
   - `app/config.js`: reads `config.json`, creates a default config if absent, normalizes auth/prefix.
   - `app/http-router.js`: `/server`, `/text`, `/upload`, chunked upload, `/file`, `/content`, revoke APIs, history persistence.
   - `app/ws-router.js`: `/push` WebSocket endpoint, auth, device tracking, config/history replay.
@@ -146,7 +147,9 @@ Generated runtime files such as `config.json`, `history.json`, storage directori
 
 Main HTTP APIs:
 
-- `GET /server`: returns WebSocket endpoint and auth requirement.
+- `POST /auth`: validates the shared code and sets a session or fixed-duration HttpOnly cookie.
+- `DELETE /auth`: clears the browser authentication cookie.
+- `GET /server`: returns WebSocket endpoint, auth requirement, and current cookie authentication status.
 - `POST /text`: accepts `Content-Type: text/plain`; stores HTML-escaped text and broadcasts a `receive` event.
 - `POST /upload`: multipart single-file upload for small files.
 - `POST /upload/chunk`: starts a chunked upload and returns `uuid`.
@@ -158,7 +161,9 @@ Main HTTP APIs:
 - `DELETE /revoke/:id`: removes one message and broadcasts `revoke`.
 - `DELETE /revoke/all`: removes all messages in current room.
 
-Rooms are selected with the `room` query parameter. Messages are filtered by exact room string, with empty string as the global room. Auth uses `Authorization: Bearer <code>` for HTTP and `?auth=<code>` for WebSocket.
+Rooms are selected with the `room` query parameter. Messages are filtered by exact room string, with empty string as the global room. Maintained browsers use the `lanclip_auth` HttpOnly cookie for HTTP and WebSocket. HTTP Bearer auth and WebSocket `?auth=<code>` remain compatibility paths for API and older clients.
+
+Browser cookies are session-only by default. Remembered authentication uses fixed 1, 3, 7, or 30-day lifetimes and does not slide on activity. Login failures are limited to 10 attempts per client IP in 15 minutes. `main.js` enables Koa proxy awareness for HTTPS termination, so deployments must restrict direct backend access to trusted nginx/frpc paths.
 
 WebSocket events:
 
@@ -194,7 +199,24 @@ Axios is installed through `vue-axios`. The global request interceptor adds `Aut
 
 ## Testing And Verification
 
-No automated test suite is present in this checkout.
+Backend authentication and HTTP integration tests use Node's built-in test runner:
+
+```bash
+cd server-node
+npm ci
+npm test
+```
+
+The HTTP suite starts a temporary server on a loopback port and uses isolated config, history, and storage paths.
+
+Frontend authentication option tests and production build:
+
+```bash
+cd client
+npm ci
+npm test
+npm run build
+```
 
 Practical verification for backend/API changes:
 
@@ -226,6 +248,8 @@ For interactive UI changes, run backend on `9501` and frontend dev server on `12
 - npm lock files are committed for the Node projects; update them deliberately with `npm install` when changing dependencies.
 - The frontend build chain is on Vue CLI 5 / webpack 5, so it should not require `NODE_OPTIONS=--openssl-legacy-provider` on modern Node.
 - `server-node/app/config.js` writes `config.json` automatically in the current working directory. Avoid accidentally committing generated local config.
+- Browser authentication is held in an HttpOnly cookie. Do not reintroduce credentials into `localStorage`, frontend Authorization interceptors, WebSocket URLs, or logs.
+- Koa trusts forwarded proxy headers. Bind the backend to loopback/private networking or firewall it so untrusted clients cannot connect directly and spoof these headers.
 - Text messages are HTML-escaped before storage and unescaped in `/content/:id`; received cards render escaped HTML with `v-html` plus linkification.
 - File deletion is split between message revocation and physical file deletion. UI code often does both; backend endpoints do not automatically remove file storage when a file message is revoked.
 - `history.json` persistence is synchronous at call sites through `saveHistory()` calls that return promises but are not always awaited; be careful when changing shutdown or persistence behavior.
