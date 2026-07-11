@@ -74,6 +74,9 @@ export const createAuthService = (serverConfig, {now = Date.now} = {}) => {
     };
 
     const recordFailure = client => {
+        for (const trackedClient of failures.keys()) {
+            activeFailures(trackedClient);
+        }
         const active = activeFailures(client);
         active.push(now());
         failures.set(client, active);
