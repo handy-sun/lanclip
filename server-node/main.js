@@ -19,6 +19,7 @@ process.env.VERSION = `node-${JSON.parse(fs.readFileSync(path.join(path.dirname(
 
 const app = koaWebsocket(new Koa);
 app.proxy = true;
+app.maxIpsCount = 1;
 app.use(async (ctx, next) => {
     const startTime = performance.now();
 

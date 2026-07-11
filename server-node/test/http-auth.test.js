@@ -5,6 +5,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import {fileURLToPath} from 'node:url';
 
 const getFreePort = () => new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -55,7 +56,7 @@ test('serves browser cookie authentication while preserving Bearer clients', asy
 
     let output = '';
     const child = spawn(process.execPath, ['main.js', configPath], {
-        cwd: path.resolve(import.meta.dirname, '..'),
+        cwd: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
         env: {...process.env, NO_COLOR: '1'},
         stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -100,6 +101,32 @@ test('serves browser cookie authentication while preserving Bearer clients', asy
 
         assert.equal(invalidDuration.status, 400);
         assert.equal(wrongPassword.status, 403);
+    });
+
+    await t.test('rate limits by the closest forwarded client address', async () => {
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const response = await fetch(`${base}/auth`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Forwarded-For': `192.0.2.${attempt}, 203.0.113.9`,
+                },
+                body: JSON.stringify({password: 'wrong', rememberDays: null}),
+            });
+            assert.equal(response.status, 403);
+        }
+
+        const limited = await fetch(`${base}/auth`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Forwarded-For': '192.0.2.250, 203.0.113.9',
+            },
+            body: JSON.stringify({password: 'wrong', rememberDays: null}),
+        });
+
+        assert.equal(limited.status, 429);
+        assert.match(limited.headers.get('retry-after'), /^\d+$/);
     });
 
     let sessionCookie;
