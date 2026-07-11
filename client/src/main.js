@@ -16,6 +16,7 @@ import {
 import 'typeface-roboto/index.css';
 
 Vue.config.productionTip = false;
+localStorage.removeItem('auth');
 
 Vue.use(VueAxios, axios);
 Vue.directive('linkified', (el, binding) => {
@@ -88,12 +89,5 @@ const app = new Vue({
         }, 1000);
     },
 })
-
-axios.interceptors.request.use(config => {
-    if (app.authCode) {
-        config.headers.Authorization = `Bearer ${app.authCode}`;
-    }
-    return config;
-});
 
 app.$mount('#app');
