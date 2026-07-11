@@ -9,30 +9,30 @@ import {
     wsBoardcast,
     murmurHash,
 } from './util.js';
+import {createAuthService} from './auth.js';
 
 /** @type {Map<String, {type: String, device: String, os: String, browser: String}>} */
 const deviceConnected = new Map;
 const deviceHashSeed = Math.random() * 0xFFFFFFFF >>> 0;
+const authService = createAuthService(config.server);
 
 const router = new KoaRouter({
     prefix: config.server.prefix,
 });
 
 router.get('/push', async (/** @type {koaWebsocket.MiddlewareContext<Koa.DefaultState>} */ ctx) => {
-    if (config.server.auth) {
-        if (ctx.query.auth !== config.server.auth) {
-            await new Promise(resolve => ctx.websocket.send(JSON.stringify({
-                event: 'forbidden',
-                data: {},
-            }), resolve));
-            ctx.websocket.close();
-            const remoteAddress = ctx.request.header['x-real-ip']
-                ?? ctx.request.header['x-forwarded-for']?.split(',').pop()?.trim()
-                ?? ctx.req.socket.remoteAddress;
+    if (config.server.auth && !authService.isRequestAuthenticated(ctx, {allowQuery: true})) {
+        await new Promise(resolve => ctx.websocket.send(JSON.stringify({
+            event: 'forbidden',
+            data: {},
+        }), resolve));
+        ctx.websocket.close();
+        const remoteAddress = ctx.request.header['x-real-ip']
+            ?? ctx.request.header['x-forwarded-for']?.split(',').pop()?.trim()
+            ?? ctx.req.socket.remoteAddress;
 
-            console.log(new Date().toISOString(), '-', remoteAddress, "auth failed: ", ctx.query.auth);
-            return;
-        }
+        console.log(new Date().toISOString(), '-', remoteAddress, 'authentication failed');
+        return;
     }
 
     ctx.websocket.room = ctx.query.room || '';

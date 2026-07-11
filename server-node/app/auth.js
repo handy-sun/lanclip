@@ -21,14 +21,15 @@ export const createAuthService = (serverConfig, {now = Date.now} = {}) => {
         return expected.length === supplied.length && crypto.timingSafeEqual(expected, supplied);
     };
 
-    const isRequestAuthenticated = ctx => {
+    const isRequestAuthenticated = (ctx, {allowQuery = false} = {}) => {
         if (!serverConfig.auth) {
             return true;
         }
         const authorization = ctx.header.authorization || '';
         const bearer = authorization.startsWith('Bearer ') ? authorization.substring(7) : null;
         const cookie = ctx.cookies.get(AUTH_COOKIE_NAME, {signed: false});
-        return matchesCredential(bearer) || matchesCredential(cookie);
+        const query = allowQuery ? ctx.query.auth : null;
+        return matchesCredential(bearer) || matchesCredential(cookie) || matchesCredential(query);
     };
 
     const cookieOptions = ctx => ({

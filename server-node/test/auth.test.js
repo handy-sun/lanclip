@@ -69,6 +69,17 @@ test('accepts either a cookie or Bearer credential for HTTP requests', () => {
     assert.equal(createAuthService({auth: false, prefix: ''}).isRequestAuthenticated(createContext()), true);
 });
 
+test('accepts legacy query credentials only for explicit WebSocket checks', () => {
+    const service = createAuthService({auth: 'secret', prefix: ''});
+    const validQuery = createContext({query: {auth: 'secret'}});
+    const invalidQuery = createContext({query: {auth: 'wrong'}});
+
+    assert.equal(service.isRequestAuthenticated(validQuery), false);
+    assert.equal(service.isRequestAuthenticated(validQuery, {allowQuery: true}), true);
+    assert.equal(service.isRequestAuthenticated(invalidQuery, {allowQuery: true}), false);
+    assert.equal(service.isRequestAuthenticated(createContext({cookie: 'secret'}), {allowQuery: true}), true);
+});
+
 test('sets a session cookie with scoped security attributes', () => {
     const service = createAuthService({auth: 'secret', prefix: '/lanclip'});
     const ctx = createContext();
