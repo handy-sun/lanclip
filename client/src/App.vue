@@ -77,6 +77,15 @@
                     </v-list-item-content>
                 </v-list-item>
 
+                <v-list-item v-if="$root.serverRequiresAuth" link @click="drawer = false; $root.logout()">
+                    <v-list-item-action>
+                        <v-icon>{{mdiLogout}}</v-icon>
+                    </v-list-item-action>
+                    <v-list-item-content>
+                        <v-list-item-title>退出认证</v-list-item-title>
+                    </v-list-item-content>
+                </v-list-item>
+
                 <v-list-item link href="#/about">
                     <v-list-item-action>
                         <v-icon>{{mdiInformation}}</v-icon>
@@ -149,22 +158,43 @@
 
         <v-dialog v-model="$root.authCodeDialog" persistent max-width="360">
             <v-card>
-                <v-card-title class="headline">需要认证</v-card-title>
-                <v-card-text>
-                    <p>这个剪贴板服务并不是公开的，请输入密码以继续连接。</p>
-                    <v-text-field v-model="$root.authCode" label="密码"></v-text-field>
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer></v-spacer>
-                    <v-btn
-                        color="primary darken-1"
-                        text
-                        @click="
-                            $root.authCodeDialog = false;
-                            $root.connect();
-                        "
-                    >提交</v-btn>
-                </v-card-actions>
+                <v-form @submit.prevent="$root.login()">
+                    <v-card-title class="headline">需要认证</v-card-title>
+                    <v-card-text>
+                        <p>这个剪贴板服务并不是公开的，请输入密码以继续连接。</p>
+                        <v-text-field
+                            v-model="$root.authCode"
+                            label="密码"
+                            type="password"
+                            autocomplete="current-password"
+                            autofocus
+                            :disabled="$root.authSubmitting"
+                        ></v-text-field>
+                        <v-checkbox
+                            v-model="$root.authRemember"
+                            label="记住密码"
+                            :disabled="$root.authSubmitting"
+                            hide-details
+                        ></v-checkbox>
+                        <v-select
+                            v-if="$root.authRemember"
+                            v-model="$root.authRememberDays"
+                            :items="$root.authRememberOptions"
+                            label="有效期"
+                            :disabled="$root.authSubmitting"
+                        ></v-select>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            color="primary darken-1"
+                            text
+                            type="submit"
+                            :loading="$root.authSubmitting"
+                            :disabled="!$root.authCode || $root.authSubmitting"
+                        >提交</v-btn>
+                    </v-card-actions>
+                </v-form>
             </v-card>
         </v-dialog>
 
@@ -243,6 +273,7 @@ import {
     mdiDiceMultiple,
     mdiPalette,
     mdiNotificationClearAll,
+    mdiLogout,
 } from '@mdi/js';
 
 export default {
@@ -262,6 +293,7 @@ export default {
             mdiDiceMultiple,
             mdiPalette,
             mdiNotificationClearAll,
+            mdiLogout,
             navigator,
         };
     },

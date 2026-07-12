@@ -1,10 +1,20 @@
+const {
+    AUTH_REMEMBER_OPTIONS,
+    createLoginPayload,
+} = require('./auth');
+
 export default {
     data() {
         return {
             websocket: null,
             websocketConnecting: false,
-            authCode: localStorage.getItem('auth') || '',
+            authCode: '',
             authCodeDialog: false,
+            authRemember: false,
+            authRememberDays: 7,
+            authRememberOptions: AUTH_REMEMBER_OPTIONS,
+            authSubmitting: false,
+            serverRequiresAuth: false,
             room: this.$router.currentRoute.query.room || '',
             roomInput: '',
             roomDialog: false,
@@ -38,8 +48,7 @@ export default {
                     this.$root.device.splice(index, 1);
                 },
                 forbidden: () => {
-                    this.authCode = '';
-                    localStorage.removeItem('auth');
+                    this.handleForbidden();
                 },
             },
         };
@@ -51,33 +60,32 @@ export default {
         },
     },
     methods: {
-        connect() {
+        async connect() {
+            if (this.websocketConnecting) return;
             this.websocketConnecting = true;
-            this.$toast(this.retry ? `未能连接到服务器，正在尝试第 ${this.retry} 次重连……` : '正在连接服务器……', {
-                showClose: false,
-                dismissable: false,
-                timeout: -1,
-            });
-            this.$http.get('server').then(response => {
-                if (this.authCode) localStorage.setItem('auth', this.authCode);
-                return new Promise((resolve, reject) => {
-                    const wsUrl = new URL(response.data.server);
-                    wsUrl.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    wsUrl.port = location.port;
-                    if (response.data.auth) {
-                        if (this.authCode) {
-                            wsUrl.searchParams.set('auth', this.authCode);
-                        } else {
-                            this.authCodeDialog = true;
-                            return;
-                        }
-                    }
-                    wsUrl.searchParams.set('room', this.room);
-                    const ws = new WebSocket(wsUrl);
-                    ws.onopen = () => resolve(ws);
-                    ws.onerror = reject;
+            try {
+                const response = await this.$http.get('server');
+                this.serverRequiresAuth = response.data.auth;
+                if (response.data.auth && !response.data.authenticated) {
+                    this.authCodeDialog = true;
+                    this.websocketConnecting = false;
+                    return;
+                }
+
+                this.$toast(this.retry ? `未能连接到服务器，正在尝试第 ${this.retry} 次重连……` : '正在连接服务器……', {
+                    showClose: false,
+                    dismissable: false,
+                    timeout: -1,
                 });
-            }).then((/** @type {WebSocket} */ ws) => {
+                const wsUrl = new URL(response.data.server);
+                wsUrl.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                wsUrl.port = location.port;
+                wsUrl.searchParams.set('room', this.room);
+                const ws = await new Promise((resolve, reject) => {
+                    const websocket = new WebSocket(wsUrl);
+                    websocket.onopen = () => resolve(websocket);
+                    websocket.onerror = reject;
+                });
                 this.websocketConnecting = false;
                 this.retry = 0;
                 this.received = [];
@@ -94,11 +102,59 @@ export default {
                     } catch {}
                 };
                 this.websocket = ws;
-            }).catch(error => {
-                // console.log(error);
+            } catch {
                 this.websocketConnecting = false;
                 this.failure();
-            });
+            }
+        },
+        async login() {
+            if (!this.authCode || this.authSubmitting) return;
+            this.authSubmitting = true;
+            try {
+                await this.$http.post('auth', createLoginPayload(
+                    this.authCode,
+                    this.authRemember,
+                    this.authRememberDays,
+                ));
+                this.authCode = '';
+                this.authCodeDialog = false;
+                this.retry = 0;
+                await this.connect();
+            } catch (error) {
+                const status = error.response && error.response.status;
+                if (status === 403) {
+                    this.$toast.error('密码错误');
+                } else if (status === 429) {
+                    this.$toast.error('认证尝试次数过多，请稍后重试');
+                } else if (error.response && error.response.data.msg) {
+                    this.$toast.error(`认证失败：${error.response.data.msg}`);
+                } else {
+                    this.$toast.error('认证失败');
+                }
+            } finally {
+                this.authSubmitting = false;
+            }
+        },
+        async logout() {
+            try {
+                await this.$http.delete('auth');
+                this.disconnect();
+                this.authCode = '';
+                this.authRemember = false;
+                this.authRememberDays = 7;
+                this.authCodeDialog = true;
+                this.$toast('已退出认证');
+            } catch {
+                this.$toast.error('退出认证失败');
+            }
+        },
+        async handleForbidden() {
+            try {
+                await this.$http.delete('auth');
+            } catch {}
+            this.disconnect();
+            this.authCode = '';
+            this.authCodeDialog = true;
         },
         disconnect() {
             this.websocketConnecting = false;

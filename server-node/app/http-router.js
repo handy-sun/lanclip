@@ -16,8 +16,10 @@ import {
     wsBoardcast,
     createThumbnail,
 } from './util.js';
+import {createAuthService} from './auth.js';
 
 const historyPath = config.server.historyFile || path.join(process.cwd(), 'history.json');
+const authService = createAuthService(config.server);
 
 let saveHistoryPromise = Promise.resolve();
 const saveHistory = () => {
@@ -38,15 +40,13 @@ const saveHistory = () => {
 
 /** @type {import('koa').Middleware} */
 const authMiddleware = async (ctx, next) => {
-    if (config.server.auth) {
-        if (ctx.header.authorization !== `Bearer ${config.server.auth}`) {
-            ctx.status = 403;
-            const remoteAddress = ctx.request.header['x-real-ip']
-                ?? ctx.request.header['x-forwarded-for']?.split(',').pop()?.trim()
-                ?? ctx.req.socket.remoteAddress;
-            console.log(new Date().toISOString(), '-', remoteAddress, "auth failed: ", ctx.header.authorization);
-            return;
-        }
+    if (!authService.isRequestAuthenticated(ctx)) {
+        ctx.status = 403;
+        const remoteAddress = ctx.request.header['x-real-ip']
+            ?? ctx.request.header['x-forwarded-for']?.split(',').pop()?.trim()
+            ?? ctx.req.socket.remoteAddress;
+        console.log(new Date().toISOString(), '-', remoteAddress, 'authentication failed');
+        return;
     }
     await next();
 };
@@ -55,10 +55,56 @@ const router = new KoaRouter({
     prefix: config.server.prefix,
 });
 
+router.post(
+    '/auth',
+    koaBody({
+        multipart: false,
+        urlencoded: false,
+        text: false,
+        json: true,
+        jsonLimit: 1024,
+    }),
+    async ctx => {
+        const body = ctx.request.body;
+        if (
+            !config.server.auth ||
+            !body ||
+            typeof body.password !== 'string' ||
+            !body.password ||
+            !authService.isAllowedRememberDays(body.rememberDays)
+        ) {
+            return writeJSON(ctx, 400, {}, '无效的认证参数');
+        }
+
+        const client = ctx.request.ip;
+        const retryAfter = authService.getRetryAfter(client);
+        if (retryAfter) {
+            ctx.set('Retry-After', retryAfter.toString());
+            return writeJSON(ctx, 429, {}, '认证尝试次数过多，请稍后重试');
+        }
+
+        if (!authService.matchesCredential(body.password)) {
+            authService.recordFailure(client);
+            console.log(new Date().toISOString(), '-', client, 'authentication failed');
+            return writeJSON(ctx, 403, {}, '密码错误');
+        }
+
+        authService.clearFailures(client);
+        authService.setCookie(ctx, body.rememberDays);
+        writeJSON(ctx);
+    },
+);
+
+router.delete('/auth', async ctx => {
+    authService.clearCookie(ctx);
+    writeJSON(ctx);
+});
+
 router.get('/server', async ctx => {
     ctx.body = {
         'server': `ws://${ctx.request.host}${config.server.prefix}/push`,
         'auth': !!config.server.auth,
+        'authenticated': authService.isRequestAuthenticated(ctx),
     };
 });
 
