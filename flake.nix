@@ -44,12 +44,12 @@
 
           client = pkgs.buildNpmPackage {
             pname = "lanclip-client";
-            version = "0.1.1";
+            version = "0.2.0";
 
             src = cleanNodeSource ./client;
             inherit nodejs;
 
-            npmDepsHash = "sha256-icOT+gNeFhYnXTdGEH/c2SqFEdAlJGCY9Rm3+hatHEo=";
+            npmDepsHash = "sha256-eGkcjI9jf6AwZEg+C2WHHTmojmzGq/sgjCOwKHvBoQE=";
 
             nativeBuildInputs = [
               pkgs.brotli
@@ -80,12 +80,12 @@
 
           server = pkgs.buildNpmPackage {
             pname = "lanclip";
-            version = "0.1.1";
+            version = "0.2.0";
 
             src = cleanNodeSource ./server-node;
             inherit nodejs;
 
-            npmDepsHash = "sha256-dE/EwIa8ZKkA0FShDxFHcPnQDHS/nu3ajKrS/a/KjL8=";
+            npmDepsHash = "sha256-Ga34OjVs572wFb0o4Pigy3OfPha4V9Jara6/PJzeyB0=";
             dontNpmBuild = true;
 
             nativeBuildInputs = [
