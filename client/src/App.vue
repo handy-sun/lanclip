@@ -103,7 +103,7 @@
             dark
         >
             <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
-            <v-toolbar-title>云剪贴板<span class="d-none d-sm-inline" v-if="$root.room">（房间：<abbr title="点击复制" style="cursor:pointer" @click="navigator.clipboard.writeText($root.room).then(() => $toast(`已复制房间名称：${$root.room}`).catch(err => $toast.error(`复制失败：${err}`)))">{{$root.room}}</abbr>）</span></v-toolbar-title>
+            <v-toolbar-title>云剪贴板<span class="d-none d-sm-inline" v-if="$root.room">（房间：<abbr title="点击复制" style="cursor:pointer" @click="copyRoom">{{$root.room}}</abbr>）</span></v-toolbar-title>
             <v-spacer></v-spacer>
             <v-tooltip left>
                 <template v-slot:activator="{ on }">
@@ -275,6 +275,7 @@ import {
     mdiNotificationClearAll,
     mdiLogout,
 } from '@mdi/js';
+import {copyText} from '@/clipboard.js';
 
 export default {
     data() {
@@ -294,10 +295,17 @@ export default {
             mdiPalette,
             mdiNotificationClearAll,
             mdiLogout,
-            navigator,
         };
     },
     methods: {
+        async copyRoom() {
+            try {
+                await copyText(this.$root.room);
+                this.$toast(`已复制房间名称：${this.$root.room}`);
+            } catch (error) {
+                this.$toast.error(`复制失败：${error.message}`);
+            }
+        },
         async clearAll() {
             try {
                 const files = this.$root.received.filter(e => e.type === 'file');
